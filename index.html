@@ -495,7 +495,7 @@ async function supabaseUpsertReport(lat, lon, raining){
 
     try{
       showMsg("");
-      await supabaseInsertReport(userLatLng.lat, userLatLng.lng, raining);
+      await supabaseUpsertReport((userLatLng.lat, userLatLng.lng, raining);
       await refreshPoints();
     }catch(err){
       showMsg(String(err.message || err));
@@ -518,4 +518,5 @@ async function supabaseUpsertReport(lat, lon, raining){
 </body>
 
 </html>
+
 
