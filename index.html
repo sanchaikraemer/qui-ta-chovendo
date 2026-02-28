@@ -265,17 +265,26 @@
       "Content-Type": "application/json"
     };
   }
+function getDeviceId(){
+  let id = localStorage.getItem("w_device_id");
+  if(!id){
+    id = (crypto?.randomUUID?.() || ("id_" + Math.random().toString(16).slice(2) + Date.now()));
+    localStorage.setItem("w_device_id", id);
+  }
+  return id;
+}
 
-  async function supabaseInsertReport(lat, lon, raining){
-    const url = `${SUPABASE_URL}/rest/v1/${TABLE}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { ...supabaseHeaders(), "Prefer":"return=minimal" },
-      body: JSON.stringify([{ lat, lon, raining }])
-    });
-    if(!res.ok){
-      const txt = await res.text().catch(()=> "");
-      throw new Error(`Falha ao salvar (${res.status}). ${txt}`);
+async function supabaseUpsertReport(lat, lon, raining){
+  const device_id = getDeviceId();
+  const url = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=device_id`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { ...supabaseHeaders(), "Prefer":"resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify([{ device_id, lat, lon, raining }])
+  });
+  if(!res.ok){
+    const txt = await res.text().catch(()=> "");
+    throw new Error(`Falha ao salvar (${res.status}). ${txt}`);
     }
   }
 
@@ -509,3 +518,4 @@
 </body>
 
 </html>
+
