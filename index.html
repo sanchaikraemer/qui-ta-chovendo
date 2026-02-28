@@ -22,7 +22,6 @@
     #app{height:100%; width:100%; position:relative; overflow:hidden}
     #map{height:100%; width:100%}
 
-    /* Top mini header */
     .top{
       position:absolute; top:10px; left:10px; right:10px;
       display:flex; gap:10px; align-items:center; justify-content:space-between;
@@ -59,7 +58,6 @@
       white-space:nowrap;
     }
 
-    /* Bottom sheet */
     .sheet{
       position:absolute; left:10px; right:10px; bottom:10px;
       z-index:999;
@@ -118,7 +116,6 @@
       display:none;
     }
 
-    /* Marker (emoji) */
     .wxMarker{
       font-size:22px;
       line-height:22px;
@@ -127,7 +124,6 @@
       will-change: opacity;
     }
 
-    /* keep sheet comfy on small screens */
     @media (max-width:380px){
       .btn{font-size:13px; padding:11px 10px}
       .wxMarker{font-size:20px}
@@ -173,27 +169,19 @@
   /***************
    * CONFIG
    ***************/
-  // 1) Crie um projeto no Supabase e uma tabela "reports" com colunas:
-  //    id uuid default gen_random_uuid() primary key
-  //    created_at timestamptz default now()
-  //    lat double precision
-  //    lon double precision
-  //    raining boolean
-  //
-  // 2) Coloque aqui:
   const SUPABASE_URL = "https://lnrbpiklzymblpyrobwx.supabase.co";
+  // ⚠️ cole a chave COMPLETA aqui (não pode faltar nenhum caractere)
   const SUPABASE_ANON_KEY = "sb_publishable_KXVbF3c7RGFXVTtfYmrzzg_dMK04Q9q";
 
   const TABLE = "reports";
-  const TTL_HOURS = 3;            // validade total
-  const RADIUS_KM = 100;          // raio de exibição
-  const START_RADIUS_KM = 5;      // abertura inicial (se não der cidade)
-  const MAX_POINTS_FETCH = 2000;  // limite de busca (cliente filtra raio)
+  const TTL_HOURS = 3;
+  const RADIUS_KM = 100;
+  const START_RADIUS_KM = 5;
+  const MAX_POINTS_FETCH = 2000;
 
-  // Limite geográfico (RS) — bounds aproximados
   const RS_BOUNDS = L.latLngBounds(
-    L.latLng(-33.75, -57.75), // S/W
-    L.latLng(-26.00, -49.70)  // N/E
+    L.latLng(-33.75, -57.75),
+    L.latLng(-26.00, -49.70)
   );
 
   /***************
@@ -214,7 +202,6 @@
     $("msg").style.display = text ? "block" : "none";
     $("msg").textContent = text || "";
   }
-
   function nowMs(){ return Date.now(); }
 
   function haversineKm(a, b){
@@ -233,7 +220,6 @@
     return (nowMs() - t) / (1000*60*60);
   }
 
-  // opacidade por hora: 0-1h=1.0, 1-2h=0.66, 2-3h=0.33, >3h=0
   function opacityByHour(createdAtIso){
     const h = ageHours(createdAtIso);
     if (h < 1) return 1.0;
@@ -265,31 +251,31 @@
       "Content-Type": "application/json"
     };
   }
-function getDeviceId(){
-  let id = localStorage.getItem("w_device_id");
-  if(!id){
-    id = (crypto?.randomUUID?.() || ("id_" + Math.random().toString(16).slice(2) + Date.now()));
-    localStorage.setItem("w_device_id", id);
-  }
-  return id;
-}
 
-async function supabaseUpsertReport(lat, lon, raining){
-  const device_id = getDeviceId();
-  const url = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=device_id`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { ...supabaseHeaders(), "Prefer":"resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify([{ device_id, lat, lon, raining }])
-  });
-  if(!res.ok){
-    const txt = await res.text().catch(()=> "");
-    throw new Error(`Falha ao salvar (${res.status}). ${txt}`);
+  function getDeviceId(){
+    let id = localStorage.getItem("w_device_id");
+    if(!id){
+      id = (crypto?.randomUUID?.() || ("id_" + Math.random().toString(16).slice(2) + Date.now()));
+      localStorage.setItem("w_device_id", id);
+    }
+    return id;
+  }
+
+  async function supabaseUpsertReport(lat, lon, raining){
+    const device_id = getDeviceId();
+    const url = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=device_id`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { ...supabaseHeaders(), "Prefer":"resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify([{ device_id, lat, lon, raining }])
+    });
+    if(!res.ok){
+      const txt = await res.text().catch(()=> "");
+      throw new Error(`Falha ao salvar (${res.status}). ${txt}`);
     }
   }
 
   async function supabaseFetchRecent(){
-    // busca últimos TTL_HOURS (tudo) e filtra por raio no cliente
     const since = new Date(nowMs() - TTL_HOURS*60*60*1000).toISOString();
     const url =
       `${SUPABASE_URL}/rest/v1/${TABLE}` +
@@ -322,12 +308,9 @@ async function supabaseUpsertReport(lat, lon, raining){
       minZoom: 6
     }).addTo(map);
 
-    // zoom controls bottom-right (mobile)
     L.control.zoom({ position:"bottomright" }).addTo(map);
-
     markersLayer.addTo(map);
 
-    // estado (RS) como fallback
     map.fitBounds(RS_BOUNDS.pad(-0.10));
   }
 
@@ -343,7 +326,6 @@ async function supabaseUpsertReport(lat, lon, raining){
       fillOpacity: 0.9
     }).addTo(map);
 
-    // raio 5km (visual inicial)
     if(radiusCircle5) map.removeLayer(radiusCircle5);
     radiusCircle5 = L.circle(userLatLng, {
       radius: START_RADIUS_KM * 1000,
@@ -353,7 +335,6 @@ async function supabaseUpsertReport(lat, lon, raining){
       fillOpacity: 0.15
     }).addTo(map);
 
-    // raio 100km (área de pontos)
     if(radiusCircle100) map.removeLayer(radiusCircle100);
     radiusCircle100 = L.circle(userLatLng, {
       radius: RADIUS_KM * 1000,
@@ -363,17 +344,14 @@ async function supabaseUpsertReport(lat, lon, raining){
       fillOpacity: 0.10
     }).addTo(map);
 
-    // abre em 5km se possível
-    const bounds5 = radiusCircle5.getBounds();
-    map.fitBounds(bounds5, { padding:[22,22] });
-
-    // limita zoom out ao RS (minZoom ~ estado)
-    map.setMinZoom(6); // estado
+    // ✅ abre perto (ruas)
+    map.setView(userLatLng, 15);
+    map.setMinZoom(6);
   }
 
   function center(){
     if(!userLatLng) return;
-    map.fitBounds(radiusCircle5.getBounds(), { padding:[22,22] });
+    map.setView(userLatLng, 15);
   }
 
   /***************
@@ -396,15 +374,11 @@ async function supabaseUpsertReport(lat, lon, raining){
       if(!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
 
       const ll = L.latLng(lat, lon);
-
-      // mantém RS bounds (segurança)
       if(!RS_BOUNDS.contains(ll)) continue;
 
-      // raio 100km
       const d = haversineKm(userLatLng, ll);
       if(d > RADIUS_KM) continue;
 
-      // opacidade por idade (passo de hora)
       const op = opacityByHour(p.created_at);
       if(op <= 0) continue;
 
@@ -412,7 +386,6 @@ async function supabaseUpsertReport(lat, lon, raining){
       const icon = makeEmojiIcon(emoji, op);
 
       L.marker(ll, { icon }).addTo(markersLayer);
-
       count++;
     }
 
@@ -437,7 +410,7 @@ async function supabaseUpsertReport(lat, lon, raining){
 
   function startAutoRefresh(){
     if(lastFetchTimer) clearInterval(lastFetchTimer);
-    lastFetchTimer = setInterval(refreshPoints, 45 * 1000); // 45s
+    lastFetchTimer = setInterval(refreshPoints, 45 * 1000);
   }
 
   /***************
@@ -458,7 +431,6 @@ async function supabaseUpsertReport(lat, lon, raining){
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
 
-        // se fora do RS, ainda assim prende no RS e centraliza no RS
         const ll = L.latLng(lat, lon);
         if(!RS_BOUNDS.contains(ll)){
           setChipLoc("Fora do RS");
@@ -472,7 +444,7 @@ async function supabaseUpsertReport(lat, lon, raining){
         refreshPoints();
         startAutoRefresh();
       },
-      (err)=>{
+      ()=>{
         setChipLoc("Permissão negada");
         showMsg("Ative a localização para usar o app.");
       },
@@ -495,7 +467,7 @@ async function supabaseUpsertReport(lat, lon, raining){
 
     try{
       showMsg("");
-      await supabaseUpsertReport((userLatLng.lat, userLatLng.lng, raining);
+      await supabaseUpsertReport(userLatLng.lat, userLatLng.lng, raining);
       await refreshPoints();
     }catch(err){
       showMsg(String(err.message || err));
@@ -516,7 +488,4 @@ async function supabaseUpsertReport(lat, lon, raining){
   getLocation();
 </script>
 </body>
-
 </html>
-
-
