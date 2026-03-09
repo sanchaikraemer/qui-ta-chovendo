@@ -5,11 +5,22 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Aqui Tá Chovendo. E aí?</title>
   <meta name="theme-color" content="#f3f4f6" />
+  <meta name="description" content="Mapa colaborativo do tempo em tempo real." />
+
+  <link rel="manifest" href="manifest.webmanifest" />
 
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     crossorigin=""
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
   />
 
   <style>
@@ -19,17 +30,14 @@
       --line:#e5e7eb;
       --text:#1f2937;
       --muted:#6b7280;
-
       --btn-bg-1:#f8fafc;
       --btn-bg-2:#e5e7eb;
       --btn-text:#1f2937;
-
       --ok:#16a34a;
       --danger:#dc2626;
-
+      --accent:#cbd5e1;
       --shadow:0 10px 30px rgba(15,23,42,.08);
       --shadow-soft:0 8px 18px rgba(15,23,42,.08);
-
       --radius-card:28px;
       --radius-btn:18px;
     }
@@ -45,9 +53,7 @@
       background:var(--bg);
     }
 
-    body{
-      padding:16px;
-    }
+    body{ padding:16px; }
 
     .wrap{
       width:100%;
@@ -79,9 +85,7 @@
       color:var(--muted);
     }
 
-    .hidden{
-      display:none !important;
-    }
+    .hidden{ display:none !important; }
 
     .choices{
       max-width:560px;
@@ -118,7 +122,7 @@
       color:var(--btn-text);
       box-shadow:var(--shadow-soft);
       cursor:pointer;
-      transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+      transition:transform .15s ease, opacity .15s ease;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -128,14 +132,8 @@
       border:1px solid #edf0f3;
     }
 
-    .weather-btn:hover{
-      transform:translateY(-1px);
-    }
-
-    .weather-btn:active{
-      transform:translateY(0);
-    }
-
+    .weather-btn:hover{ transform:translateY(-1px); }
+    .weather-btn:active{ transform:translateY(0); }
     .weather-btn:disabled{
       opacity:.72;
       cursor:not-allowed;
@@ -253,10 +251,84 @@
       opacity:.9;
     }
 
+    .smart-hint{
+      margin-top:10px;
+      font-size:13px;
+      text-align:center;
+      color:#64748b;
+    }
+
+    .leaflet-div-icon{
+      background:transparent;
+      border:none;
+    }
+
+    .my-marker-wrap{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:40px;
+      height:40px;
+    }
+
+    .my-marker-wrap .my-ring{
+      position:absolute;
+      inset:2px;
+      border:2px solid rgba(15,23,42,.25);
+      border-radius:50%;
+      pointer-events:none;
+    }
+
+    .weather-map-emoji{
+      font-size:36px;
+      line-height:1;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,.38))
+              drop-shadow(0 0 4px rgba(0,0,0,.22));
+    }
+
+    .my-weather-map-emoji{
+      font-size:36px;
+      line-height:1;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,.38))
+              drop-shadow(0 0 4px rgba(0,0,0,.22));
+      transform:scale(1.08);
+    }
+
+    .custom-cluster{
+      background:transparent;
+      border:none;
+    }
+
+    .cluster-bubble{
+      min-width:48px;
+      height:48px;
+      padding:0 10px;
+      border-radius:999px;
+      background:#ffffff;
+      border:1px solid #dbe3ea;
+      box-shadow:0 8px 18px rgba(15,23,42,.16);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      font-weight:800;
+      color:#1f2937;
+    }
+
+    .cluster-emoji{
+      font-size:22px;
+      line-height:1;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,.22));
+    }
+
+    .cluster-count{
+      font-size:14px;
+      line-height:1;
+    }
+
     @media (max-width:640px){
-      body{
-        padding:12px;
-      }
+      body{ padding:12px; }
 
       .card{
         padding:24px 14px 18px;
@@ -294,45 +366,35 @@
         gap:8px;
       }
 
-      .emoji{
-        font-size:28px;
-      }
+      .emoji{ font-size:28px; }
+      .weather-btn.event .emoji{ font-size:24px; }
 
-      .weather-btn.event .emoji{
-        font-size:24px;
-      }
+      .events-grid{ gap:10px; }
 
-      .events-grid{
-        gap:10px;
-      }
-
-      #map{
-        height:400px;
-      }
+      #map{ height:400px; }
 
       .top-bar{
         flex-direction:column;
         align-items:stretch;
       }
 
-      .actions{
-        width:100%;
-      }
+      .actions{ width:100%; }
 
       .action-btn{
         flex:1 1 0;
         text-align:center;
       }
+
+      .cluster-bubble{
+        min-width:44px;
+        height:44px;
+        padding:0 8px;
+      }
     }
 
     @media (max-width:420px){
-      .weather-btn.main{
-        font-size:16px;
-      }
-
-      .weather-btn.event{
-        font-size:14px;
-      }
+      .weather-btn.main{ font-size:16px; }
+      .weather-btn.event{ font-size:14px; }
     }
   </style>
 </head>
@@ -412,25 +474,38 @@
         <div id="map"></div>
 
         <div class="map-note">
-          O mapa mostra a posição capturada no seu celular no momento da marcação.
+          O mapa mostra os pontos ativos das últimas 3 horas.
         </div>
 
         <div id="mapStatus" class="status"></div>
-
         <div id="cityMini" class="city-mini"></div>
+        <div id="smartHint" class="smart-hint"></div>
       </div>
     </section>
   </main>
 
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <script>
-    const TEST_MODE = false;
+    // =========================================
+    // COLE AQUI OS DADOS DO SEU SUPABASE
+    // =========================================
+    const SUPABASE_URL = "COLE_AQUI_SUA_SUPABASE_URL";
+    const SUPABASE_ANON_KEY = "COLE_AQUI_SUA_SUPABASE_ANON_KEY";
 
-    const TEST_COORDS = {
-      lat: -28.2839,
-      lng: -52.7869
-    };
+    // =========================================
+    // CONFIG
+    // =========================================
+    const EVENT_DURATION_MS = 3 * 60 * 60 * 1000; // 3 horas
+    const MAP_ZOOM = 11;
+    const AUTO_REFRESH_MS = 60 * 1000; // 60s
+    const MIN_DISTANCE_METERS = 200;
+    const ACTIVE_TABLE = "weather_points_current";
+    const HISTORY_TABLE = "weather_points_history";
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const $ = (id) => document.getElementById(id);
 
@@ -453,11 +528,28 @@
     const selectedWeatherText = $("selectedWeatherText");
     const selectedWeatherIcon = $("selectedWeatherIcon");
     const cityMini = $("cityMini");
+    const smartHint = $("smartHint");
 
     let map = null;
-    let marker = null;
     let selectedWeather = null;
     let currentCoords = null;
+    let refreshTimer = null;
+    let markerClusterGroup = null;
+    let ownActivePoint = null;
+
+    const deviceId = getDeviceId();
+
+    function getDeviceId() {
+      const key = "aqui_ta_chovendo_device_id";
+      let id = localStorage.getItem(key);
+
+      if (!id) {
+        id = "dev_" + crypto.randomUUID();
+        localStorage.setItem(key, id);
+      }
+
+      return id;
+    }
 
     function setStatus(message = "", type = "") {
       statusEl.textContent = message;
@@ -480,41 +572,72 @@
     }
 
     function getWeatherData(value) {
-      if (value === "rain") {
-        return { icon: "🌧️", label: "Aqui tá chovendo" };
-      }
-      if (value === "cloud") {
-        return { icon: "☁️", label: "Aqui tá nublado" };
-      }
-      if (value === "sun") {
-        return { icon: "☀️", label: "Aqui tem sol" };
-      }
-      if (value === "storm") {
-        return { icon: "🌩️", label: "Temporal" };
-      }
-      if (value === "frost") {
-        return { icon: "❄️", label: "Geada" };
-      }
-      if (value === "hail") {
-        return { icon: "🧊", label: "Granizo" };
-      }
-      if (value === "wind") {
-        return { icon: "💨", label: "Ventania" };
-      }
-
+      if (value === "rain") return { icon: "🌧️", label: "Aqui tá chovendo" };
+      if (value === "cloud") return { icon: "☁️", label: "Aqui tá nublado" };
+      if (value === "sun") return { icon: "☀️", label: "Aqui tem sol" };
+      if (value === "storm") return { icon: "🌩️", label: "Temporal" };
+      if (value === "frost") return { icon: "❄️", label: "Geada" };
+      if (value === "hail") return { icon: "🧊", label: "Granizo" };
+      if (value === "wind") return { icon: "💨", label: "Ventania" };
       return { icon: "📍", label: "Sua resposta" };
     }
 
-    function getCurrentPositionAsync() {
-      if (TEST_MODE) {
-        return Promise.resolve({
-          coords: {
-            latitude: TEST_COORDS.lat,
-            longitude: TEST_COORDS.lng
-          }
+    function isValidWeatherType(value) {
+      return ["rain","cloud","sun","storm","frost","hail","wind"].includes(value);
+    }
+
+    function isValidLatLng(lat, lng) {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+      if (lat < -34 || lat > 6) return false;
+      if (lng < -74 || lng > -28) return false;
+      return true;
+    }
+
+    function haversineMeters(lat1, lng1, lat2, lng2) {
+      const R = 6371000;
+      const toRad = (deg) => deg * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function getCutoffIso() {
+      return new Date(Date.now() - EVENT_DURATION_MS).toISOString();
+    }
+
+    function buildWeatherDivIcon(weatherValue, isOwn = false) {
+      const weather = getWeatherData(weatherValue);
+
+      if (isOwn) {
+        return L.divIcon({
+          className: "",
+          html: `
+            <div class="my-marker-wrap">
+              <div class="my-ring"></div>
+              <div class="my-weather-map-emoji">${weather.icon}</div>
+            </div>
+          `,
+          iconSize: [40, 40],
+          iconAnchor: [20, 20]
         });
       }
 
+      return L.divIcon({
+        className: "",
+        html: `<div class="weather-map-emoji">${weather.icon}</div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      });
+    }
+
+    function getCurrentPositionAsync() {
       return new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
           reject(new Error("Seu navegador não suporta geolocalização."));
@@ -533,74 +656,267 @@
       });
     }
 
-    function initMap(lat, lng, choice) {
+    async function fetchActivePoints() {
+      const cutoffIso = getCutoffIso();
+
+      const { data, error } = await supabaseClient
+        .from(ACTIVE_TABLE)
+        .select("device_id, weather_type, lat, lng, updated_at")
+        .gte("updated_at", cutoffIso);
+
+      if (error) throw error;
+      return (data || []).filter(p => isValidWeatherType(p.weather_type) && isValidLatLng(Number(p.lat), Number(p.lng)));
+    }
+
+    async function fetchOwnActivePoint() {
+      const cutoffIso = getCutoffIso();
+
+      const { data, error } = await supabaseClient
+        .from(ACTIVE_TABLE)
+        .select("device_id, weather_type, lat, lng, updated_at")
+        .eq("device_id", deviceId)
+        .gte("updated_at", cutoffIso)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return null;
+      if (!isValidWeatherType(data.weather_type)) return null;
+      if (!isValidLatLng(Number(data.lat), Number(data.lng))) return null;
+      return data;
+    }
+
+    async function appendHistoryRow(choice, lat, lng) {
+      const payload = {
+        device_id: deviceId,
+        weather_type: choice,
+        lat,
+        lng,
+        created_at: new Date().toISOString()
+      };
+
+      const { error } = await supabaseClient
+        .from(HISTORY_TABLE)
+        .insert(payload);
+
+      if (error) throw error;
+    }
+
+    async function upsertCurrentPoint(choice, lat, lng) {
+      const payload = {
+        device_id: deviceId,
+        weather_type: choice,
+        lat,
+        lng,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabaseClient
+        .from(ACTIVE_TABLE)
+        .upsert(payload, { onConflict: "device_id" });
+
+      if (error) throw error;
+    }
+
+    function ensureMap(lat, lng) {
       const mapContainer = document.getElementById("map");
 
       if (!map) {
-        map = L.map(mapContainer).setView([lat, lng], 13);
+        map = L.map(mapContainer).setView([lat, lng], MAP_ZOOM);
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
           attribution: "&copy; OpenStreetMap"
         }).addTo(map);
+
+        markerClusterGroup = L.markerClusterGroup({
+          maxClusterRadius: 60,
+          spiderfyOnMaxZoom: true,
+          showCoverageOnHover: false,
+          zoomToBoundsOnClick: true,
+          iconCreateFunction: function(cluster) {
+            const markers = cluster.getAllChildMarkers();
+            const counts = {};
+
+            for (const marker of markers) {
+              const w = marker.options.weatherType || "rain";
+              counts[w] = (counts[w] || 0) + 1;
+            }
+
+            let dominantType = "rain";
+            let dominantCount = 0;
+
+            for (const [type, count] of Object.entries(counts)) {
+              if (count > dominantCount) {
+                dominantType = type;
+                dominantCount = count;
+              }
+            }
+
+            const dominant = getWeatherData(dominantType);
+
+            return L.divIcon({
+              html: `
+                <div class="cluster-bubble">
+                  <span class="cluster-emoji">${dominant.icon}</span>
+                  <span class="cluster-count">${markers.length}</span>
+                </div>
+              `,
+              className: "custom-cluster",
+              iconSize: [52, 48],
+              iconAnchor: [26, 24]
+            });
+          }
+        });
+
+        map.addLayer(markerClusterGroup);
       } else {
-        map.setView([lat, lng], 13);
+        map.setView([lat, lng], MAP_ZOOM);
       }
 
-      if (marker) {
-        map.removeLayer(marker);
-      }
-
-      const weather = getWeatherData(choice);
-
-     
-   const weatherIcon = L.divIcon({
-  className: "",
-  html: `
-    <div style="font-size:36px; line-height:1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.38)) drop-shadow(0 0 4px rgba(0,0,0,.22));">
-      ${weather.icon}
-    </div>
-  `,
-  iconSize: [36, 36],
-  iconAnchor: [18, 18]
-});
-
-      marker = L.marker([lat, lng], {
-        icon: weatherIcon
-      }).addTo(map);
-
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 250);
+      setTimeout(() => map.invalidateSize(), 250);
     }
 
-    function showMapScreen(choice, lat, lng) {
+    async function renderActivePoints(centerLat = null, centerLng = null) {
+      const points = await fetchActivePoints();
+
+      if (!map && points.length) {
+        ensureMap(centerLat ?? Number(points[0].lat), centerLng ?? Number(points[0].lng));
+      }
+
+      if (markerClusterGroup) {
+        markerClusterGroup.clearLayers();
+      }
+
+      if (!points.length) {
+        cityMini.textContent = "Nenhum ponto ativo no momento.";
+        smartHint.textContent = "";
+        return;
+      }
+
+      let ownFound = false;
+
+      for (const point of points) {
+        const isOwn = point.device_id === deviceId;
+        const marker = L.marker([Number(point.lat), Number(point.lng)], {
+          icon: buildWeatherDivIcon(point.weather_type, isOwn)
+        });
+
+        marker.options.weatherType = point.weather_type;
+        marker.options.isOwn = isOwn;
+
+        if (isOwn) ownFound = true;
+
+        markerClusterGroup.addLayer(marker);
+      }
+
+      cityMini.textContent = points.length === 1
+        ? "1 ponto ativo nas últimas 3 horas."
+        : `${points.length} pontos ativos nas últimas 3 horas.`;
+
+      smartHint.textContent = ownFound
+        ? "Seu ponto está destacado com um anel discreto."
+        : "";
+
+      if (centerLat !== null && centerLng !== null && map) {
+        map.setView([centerLat, centerLng], MAP_ZOOM);
+      }
+    }
+
+    async function showMapScreen(choice, lat, lng) {
       const weather = getWeatherData(choice);
 
       selectedWeather = choice;
+      currentCoords = { lat, lng };
+
       selectedWeatherText.textContent = weather.label;
       selectedWeatherIcon.textContent = weather.icon;
 
       startScreen.classList.add("hidden");
       mapScreen.classList.remove("hidden");
 
-      initMap(lat, lng, choice);
+      ensureMap(lat, lng);
+      await renderActivePoints(lat, lng);
+    }
+
+    function startAutoRefresh() {
+      stopAutoRefresh();
+
+      refreshTimer = setInterval(async () => {
+        try {
+          await renderActivePoints(
+            currentCoords ? currentCoords.lat : null,
+            currentCoords ? currentCoords.lng : null
+          );
+        } catch (err) {
+          console.error(err);
+        }
+      }, AUTO_REFRESH_MS);
+    }
+
+    function stopAutoRefresh() {
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+        refreshTimer = null;
+      }
+    }
+
+    async function saveOrUpdateVote(choice) {
+      const position = await getCurrentPositionAsync();
+      const freshLat = position.coords.latitude;
+      const freshLng = position.coords.longitude;
+
+      if (!isValidLatLng(freshLat, freshLng)) {
+        throw new Error("Localização inválida.");
+      }
+
+      let finalLat = freshLat;
+      let finalLng = freshLng;
+
+      const previous = await fetchOwnActivePoint();
+
+      if (previous) {
+        const dist = haversineMeters(
+          Number(previous.lat),
+          Number(previous.lng),
+          freshLat,
+          freshLng
+        );
+
+        if (dist < MIN_DISTANCE_METERS) {
+          finalLat = Number(previous.lat);
+          finalLng = Number(previous.lng);
+        }
+      }
+
+      await upsertCurrentPoint(choice, finalLat, finalLng);
+      await appendHistoryRow(choice, finalLat, finalLng);
+
+      ownActivePoint = {
+        device_id: deviceId,
+        weather_type: choice,
+        lat: finalLat,
+        lng: finalLng,
+        updated_at: new Date().toISOString()
+      };
+
+      return { lat: finalLat, lng: finalLng };
     }
 
     async function handleVote(choice) {
       try {
+        if (!isValidWeatherType(choice)) {
+          throw new Error("Clima inválido.");
+        }
+
         setButtonsDisabled(true);
-        setStatus(TEST_MODE ? "Abrindo mapa de teste..." : "Obtendo sua localização...");
+        setStatus("Obtendo sua localização...");
 
-        const position = await getCurrentPositionAsync();
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-
-        currentCoords = { lat, lng };
+        const result = await saveOrUpdateVote(choice);
 
         setStatus("");
-        showMapScreen(choice, lat, lng);
-        setMapStatus(TEST_MODE ? "Modo teste local ativo." : "Localização obtida com sucesso.", "ok");
+        await showMapScreen(choice, result.lat, result.lng);
+        setMapStatus("Ponto salvo com sucesso. Ele ficará ativo por 3 horas.", "ok");
+        startAutoRefresh();
       } catch (err) {
         console.error(err);
 
@@ -623,6 +939,7 @@
     function shareWhatsApp() {
       const url = window.location.href;
       const weather = getWeatherData(selectedWeather);
+
       const msg =
         "Como está o tempo aí na sua cidade agora?\n\n" +
         "Eu marquei: " + weather.label + "\n\n" +
@@ -633,12 +950,55 @@
       window.open(shareUrl, "_blank");
     }
 
-    function resetView() {
+    async function resetView() {
+      stopAutoRefresh();
+
       mapScreen.classList.add("hidden");
       startScreen.classList.remove("hidden");
-      setStatus("");
+
       setMapStatus("");
       cityMini.textContent = "";
+      smartHint.textContent = "";
+
+      try {
+        const ownPoint = await fetchOwnActivePoint();
+
+        if (ownPoint) {
+          ownActivePoint = ownPoint;
+          setStatus("Você já marcou nas últimas 3 horas. Escolha outro clima para atualizar.", "ok");
+        } else {
+          ownActivePoint = null;
+          setStatus("");
+        }
+      } catch (err) {
+        console.error(err);
+        setStatus("");
+      }
+    }
+
+    async function initApp() {
+      try {
+        setStatus("Carregando...");
+
+        const ownPoint = await fetchOwnActivePoint();
+
+        if (ownPoint) {
+          ownActivePoint = ownPoint;
+          setStatus("");
+          await showMapScreen(
+            ownPoint.weather_type,
+            Number(ownPoint.lat),
+            Number(ownPoint.lng)
+          );
+          setMapStatus("Seu ponto ainda está ativo. Se quiser, volte e atualize o clima.", "ok");
+          startAutoRefresh();
+        } else {
+          setStatus("");
+        }
+      } catch (err) {
+        console.error(err);
+        setStatus("Erro ao carregar dados do mapa.", "err");
+      }
     }
 
     btnRain.addEventListener("click", () => handleVote("rain"));
@@ -651,7 +1011,14 @@
 
     btnWhats.addEventListener("click", shareWhatsApp);
     btnReset.addEventListener("click", resetView);
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(err => console.error("SW:", err));
+      });
+    }
+
+    initApp();
   </script>
 </body>
 </html>
-
