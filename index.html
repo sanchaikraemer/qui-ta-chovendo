@@ -2,490 +2,650 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>aqui ta chovendo, e ai?</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aqui Tá Chovendo. E aí?</title>
+  <meta name="theme-color" content="#f3f4f6" />
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
 
   <style>
     :root{
-      --bg:#0b1220;
-      --card:rgba(255,255,255,.10);
-      --line:rgba(255,255,255,.16);
-      --text:#f8fafc;
-      --muted:rgba(248,250,252,.70);
-      --shadow:0 18px 46px rgba(0,0,0,.50);
-      --r:18px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%; margin:0; background:var(--bg); font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    #app{height:100%; width:100%; position:relative; overflow:hidden}
-    #map{height:100%; width:100%}
+      --bg:#f3f4f6;
+      --card:#ffffff;
+      --line:#e5e7eb;
+      --text:#1f2937;
+      --muted:#6b7280;
 
-    .top{
-      position:absolute; top:10px; left:10px; right:10px;
-      display:flex; gap:10px; align-items:center; justify-content:space-between;
-      z-index:999;
-      pointer-events:none;
-    }
-    .chip{
-      pointer-events:auto;
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 10px;
-      border:1px solid var(--line);
-      background:rgba(11,18,32,.55);
-      backdrop-filter: blur(10px);
-      border-radius:999px;
-      color:var(--text);
-      font-weight:800;
-      font-size:12px;
-      box-shadow:var(--shadow);
-      white-space:nowrap;
-    }
-    .chip small{font-weight:700; color:var(--muted)}
-    .chipBtn{
-      pointer-events:auto;
-      cursor:pointer;
-      border:1px solid var(--line);
-      background:rgba(11,18,32,.55);
-      backdrop-filter: blur(10px);
-      border-radius:999px;
-      padding:8px 10px;
-      color:var(--text);
-      font-weight:900;
-      font-size:12px;
-      box-shadow:var(--shadow);
-      white-space:nowrap;
+      --btn-bg-1:#f8fafc;
+      --btn-bg-2:#e5e7eb;
+      --btn-text:#1f2937;
+
+      --ok:#16a34a;
+      --danger:#dc2626;
+
+      --shadow:0 10px 30px rgba(15,23,42,.08);
+      --shadow-soft:0 8px 18px rgba(15,23,42,.08);
+
+      --radius-card:28px;
+      --radius-btn:18px;
     }
 
-    .sheet{
-      position:absolute; left:10px; right:10px; bottom:10px;
-      z-index:999;
-      border:1px solid var(--line);
-      background:rgba(11,18,32,.72);
-      backdrop-filter: blur(12px);
-      box-shadow:var(--shadow);
-      border-radius:22px;
-      padding:12px;
-    }
-    .title{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
-    .title h1{
+    *{ box-sizing:border-box; }
+
+    html,body{
       margin:0;
-      font-size:14px;
-      letter-spacing:.2px;
+      padding:0;
+      min-height:100%;
+      font-family: Arial, Helvetica, sans-serif;
       color:var(--text);
-      line-height:1.2;
+      background:var(--bg);
     }
-    .title p{
-      margin:4px 0 0;
-      font-size:12px;
-      color:var(--muted);
-      line-height:1.35;
+
+    body{
+      padding:16px;
     }
-    .row{
-      display:flex; gap:10px; margin-top:10px;
+
+    .wrap{
+      width:100%;
+      max-width:760px;
+      margin:0 auto;
     }
-    .btn{
-      all:unset;
-      cursor:pointer;
-      flex:1;
-      display:flex; align-items:center; justify-content:center; gap:10px;
-      padding:12px 12px;
-      border-radius:18px;
+
+    .card{
+      background:var(--card);
       border:1px solid var(--line);
-      background:rgba(255,255,255,.08);
-      color:var(--text);
-      font-weight:900;
-      font-size:14px;
-      user-select:none;
-      -webkit-tap-highlight-color: transparent;
+      border-radius:var(--radius-card);
+      box-shadow:var(--shadow);
+      padding:28px 18px 20px;
     }
-    .btn:active{transform: translateY(1px)}
-    .btn .icon{font-size:18px}
-    .meta{
-      display:flex; gap:10px; flex-wrap:wrap;
-      margin-top:10px;
+
+    h1{
+      margin:0 0 10px;
+      text-align:center;
+      font-size:clamp(30px, 6vw, 48px);
+      line-height:1.06;
+      letter-spacing:-0.03em;
+      color:#334155;
+    }
+
+    .subtle{
+      margin:0 0 28px;
+      text-align:center;
+      font-size:15px;
       color:var(--muted);
-      font-size:12px;
-    }
-    .meta b{color:var(--text)}
-    .msg{
-      margin-top:8px;
-      font-size:12px;
-      color:#fecaca;
-      display:none;
     }
 
-    .wxMarker{
-      font-size:22px;
-      line-height:22px;
-      filter: drop-shadow(0 8px 10px rgba(0,0,0,.45));
-      transform: translate(-50%, -50%);
-      will-change: opacity;
+    .hidden{
+      display:none !important;
     }
 
-    @media (max-width:380px){
-      .btn{font-size:13px; padding:11px 10px}
-      .wxMarker{font-size:20px}
+    .choices{
+      max-width:560px;
+      margin:0 auto;
+    }
+
+    .section-label{
+      margin:8px 0 14px;
+      font-size:13px;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:#9ca3af;
+    }
+
+    .main-buttons{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      margin-bottom:22px;
+    }
+
+    .events-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
+    .weather-btn{
+      width:100%;
+      border:none;
+      border-radius:var(--radius-btn);
+      background:linear-gradient(180deg, var(--btn-bg-1), var(--btn-bg-2));
+      color:var(--btn-text);
+      box-shadow:var(--shadow-soft);
+      cursor:pointer;
+      transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      text-align:center;
+      font-weight:800;
+      border:1px solid #edf0f3;
+    }
+
+    .weather-btn:hover{
+      transform:translateY(-1px);
+    }
+
+    .weather-btn:active{
+      transform:translateY(0);
+    }
+
+    .weather-btn:disabled{
+      opacity:.72;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .weather-btn.main{
+      min-height:72px;
+      padding:12px 16px;
+      font-size:18px;
+    }
+
+    .weather-btn.event{
+      min-height:62px;
+      padding:10px 12px;
+      font-size:17px;
+    }
+
+    .emoji{
+      font-size:32px;
+      line-height:1;
+      flex:0 0 auto;
+    }
+
+    .weather-btn.event .emoji{
+      font-size:28px;
+    }
+
+    .status{
+      margin-top:18px;
+      min-height:22px;
+      text-align:center;
+      font-size:14px;
+      color:var(--muted);
+    }
+
+    .status.ok{ color:var(--ok); }
+    .status.err{ color:var(--danger); }
+
+    .map-view{
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+
+    .top-bar{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 16px;
+      border:1px solid var(--line);
+      background:#f8fafc;
+      border-radius:16px;
+      font-size:16px;
+      color:var(--text);
+      font-weight:700;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .action-btn{
+      border:none;
+      border-radius:14px;
+      padding:12px 16px;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:var(--shadow-soft);
+    }
+
+    .btn-whats{
+      background:#25D366;
+      color:#062b16;
+    }
+
+    .btn-reset{
+      background:#ffffff;
+      color:var(--text);
+      border:1px solid var(--line);
+    }
+
+    #map{
+      width:100%;
+      height:460px;
+      border-radius:22px;
+      overflow:hidden;
+      border:1px solid var(--line);
+      box-shadow:var(--shadow-soft);
+    }
+
+    .map-note{
+      font-size:13px;
+      color:var(--muted);
+      text-align:center;
+      line-height:1.45;
+    }
+
+    .city-mini{
+      margin-top:2px;
+      font-size:12px;
+      color:var(--muted);
+      text-align:center;
+      opacity:.9;
+    }
+
+    @media (max-width:640px){
+      body{
+        padding:12px;
+      }
+
+      .card{
+        padding:24px 14px 18px;
+        border-radius:24px;
+      }
+
+      h1{
+        font-size:clamp(28px, 8vw, 40px);
+      }
+
+      .subtle{
+        font-size:14px;
+        margin-bottom:24px;
+      }
+
+      .section-label{
+        margin:8px 0 12px;
+      }
+
+      .main-buttons{
+        gap:12px;
+        margin-bottom:20px;
+      }
+
+      .weather-btn.main{
+        min-height:68px;
+        font-size:17px;
+        padding:10px 14px;
+      }
+
+      .weather-btn.event{
+        min-height:58px;
+        font-size:15px;
+        padding:8px 10px;
+        gap:8px;
+      }
+
+      .emoji{
+        font-size:28px;
+      }
+
+      .weather-btn.event .emoji{
+        font-size:24px;
+      }
+
+      .events-grid{
+        gap:10px;
+      }
+
+      #map{
+        height:400px;
+      }
+
+      .top-bar{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .actions{
+        width:100%;
+      }
+
+      .action-btn{
+        flex:1 1 0;
+        text-align:center;
+      }
+    }
+
+    @media (max-width:420px){
+      .weather-btn.main{
+        font-size:16px;
+      }
+
+      .weather-btn.event{
+        font-size:14px;
+      }
     }
   </style>
 </head>
-
 <body>
-<div id="app">
-  <div id="map"></div>
+  <main class="wrap">
+    <section class="card">
+      <div id="startScreen">
+        <h1>Aqui tá chovendo. E aí?</h1>
+        <p class="subtle">Marque o que está acontecendo aí agora.</p>
 
-  <div class="top">
-    <div class="chip" id="chipLoc">📍 <span>Localizando…</span></div>
-    <button class="chipBtn" id="btnCenter">Centralizar</button>
-  </div>
+        <div class="choices">
+          <div class="section-label">Tempo agora</div>
 
-  <div class="sheet">
-    <div class="title">
-      <div>
-        <h1>aqui ta chovendo, e ai?</h1>
-        <p id="sub">Pra ver o mapa, responda: está chovendo aí agora?</p>
+          <div class="main-buttons">
+            <button id="btnRain" class="weather-btn main" type="button">
+              <span class="emoji">🌧️</span>
+              <span>Aqui tá chovendo</span>
+            </button>
+
+            <button id="btnCloud" class="weather-btn main" type="button">
+              <span class="emoji">☁️</span>
+              <span>Aqui tá nublado</span>
+            </button>
+
+            <button id="btnSun" class="weather-btn main" type="button">
+              <span class="emoji">☀️</span>
+              <span>Aqui tem sol</span>
+            </button>
+          </div>
+
+          <div class="section-label">Outros eventos</div>
+
+          <div class="events-grid">
+            <button id="btnStorm" class="weather-btn event" type="button">
+              <span class="emoji">🌩️</span>
+              <span>Temporal</span>
+            </button>
+
+            <button id="btnFrost" class="weather-btn event" type="button">
+              <span class="emoji">❄️</span>
+              <span>Geada</span>
+            </button>
+
+            <button id="btnHail" class="weather-btn event" type="button">
+              <span class="emoji">🧊</span>
+              <span>Granizo</span>
+            </button>
+
+            <button id="btnWind" class="weather-btn event" type="button">
+              <span class="emoji">💨</span>
+              <span>Ventania</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="status" class="status"></div>
       </div>
-      <div class="chip" id="chipPts">👥 <small>pontos</small> <span id="ptCount">0</span></div>
-    </div>
 
-    <div class="row">
-      <button class="btn" id="btnSim"><span class="icon">💧</span>Sim</button>
-      <button class="btn" id="btnNao"><span class="icon">☀️</span>Não</button>
-    </div>
+      <div id="mapScreen" class="map-view hidden">
+        <div class="top-bar">
+          <div class="badge">
+            <span id="selectedWeatherIcon">☁️</span>
+            <span id="selectedWeatherText">Sua resposta</span>
+          </div>
 
-    <div class="meta">
-      <span>Raio: <b>100km</b></span>
-      <span>Validade: <b>3h</b></span>
-      <span>Zoom máx: <b>RS</b></span>
-    </div>
+          <div class="actions">
+            <button id="btnWhats" class="action-btn btn-whats" type="button">
+              Compartilhar no WhatsApp
+            </button>
 
-    <div class="msg" id="msg"></div>
-  </div>
-</div>
+            <button id="btnReset" class="action-btn btn-reset" type="button">
+              Voltar
+            </button>
+          </div>
+        </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-  /***************
-   * CONFIG
-   ***************/
-  const SUPABASE_URL = "https://lnrbpiklzymblpyrobwx.supabase.co";
-  // ⚠️ cole a chave COMPLETA aqui (não pode faltar nenhum caractere)
-  const SUPABASE_ANON_KEY = "sb_publishable_KXVbF3c7RGFXVTtfYmrzzg_dMK04Q9q";
+        <div id="map"></div>
 
-  const TABLE = "reports";
-  const TTL_HOURS = 3;
-  const RADIUS_KM = 100;
-  const START_RADIUS_KM = 5;
-  const MAX_POINTS_FETCH = 2000;
+        <div class="map-note">
+          O mapa mostra a posição capturada no seu celular no momento da marcação.
+        </div>
 
-  const RS_BOUNDS = L.latLngBounds(
-    L.latLng(-33.75, -57.75),
-    L.latLng(-26.00, -49.70)
-  );
+        <div id="mapStatus" class="status"></div>
 
-  /***************
-   * STATE
-   ***************/
-  const $ = (id) => document.getElementById(id);
-  let map, userLatLng = null;
-  let userMarker = null;
-  let radiusCircle100 = null;
-  let radiusCircle5 = null;
-  let markersLayer = L.layerGroup();
-  let lastFetchTimer = null;
+        <div id="cityMini" class="city-mini"></div>
+      </div>
+    </section>
+  </main>
 
-  /***************
-   * HELPERS
-   ***************/
-  function showMsg(text){
-    $("msg").style.display = text ? "block" : "none";
-    $("msg").textContent = text || "";
-  }
-  function nowMs(){ return Date.now(); }
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-  function haversineKm(a, b){
-    const R = 6371;
-    const toRad = (x)=> x * Math.PI/180;
-    const dLat = toRad(b.lat - a.lat);
-    const dLon = toRad(b.lng - a.lng);
-    const lat1 = toRad(a.lat);
-    const lat2 = toRad(b.lat);
-    const s = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-    return 2 * R * Math.asin(Math.sqrt(s));
-  }
+  <script>
+    const TEST_MODE = false;
 
-  function ageHours(createdAtIso){
-    const t = new Date(createdAtIso).getTime();
-    return (nowMs() - t) / (1000*60*60);
-  }
-
-  function opacityByHour(createdAtIso){
-    const h = ageHours(createdAtIso);
-    if (h < 1) return 1.0;
-    if (h < 2) return 0.66;
-    if (h < 3) return 0.33;
-    return 0.0;
-  }
-
-  function makeEmojiIcon(emoji, opacity){
-    return L.divIcon({
-      className: "",
-      html: `<div class="wxMarker" style="opacity:${opacity}">${emoji}</div>`,
-      iconSize: [0,0],
-      iconAnchor: [0,0]
-    });
-  }
-
-  function setChipLoc(text){
-    $("chipLoc").querySelector("span").textContent = text;
-  }
-
-  /***************
-   * SUPABASE REST
-   ***************/
-  function supabaseHeaders(){
-    return {
-      "apikey": SUPABASE_ANON_KEY,
-      "Authorization": "Bearer " + SUPABASE_ANON_KEY,
-      "Content-Type": "application/json"
+    const TEST_COORDS = {
+      lat: -28.2839,
+      lng: -52.7869
     };
-  }
 
-  function getDeviceId(){
-    let id = localStorage.getItem("w_device_id");
-    if(!id){
-      id = (crypto?.randomUUID?.() || ("id_" + Math.random().toString(16).slice(2) + Date.now()));
-      localStorage.setItem("w_device_id", id);
-    }
-    return id;
-  }
+    const $ = (id) => document.getElementById(id);
 
-  async function supabaseUpsertReport(lat, lon, raining){
-    const device_id = getDeviceId();
-    const url = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=device_id`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { ...supabaseHeaders(), "Prefer":"resolution=merge-duplicates,return=minimal" },
-      body: JSON.stringify([{ device_id, lat, lon, raining }])
-    });
-    if(!res.ok){
-      const txt = await res.text().catch(()=> "");
-      throw new Error(`Falha ao salvar (${res.status}). ${txt}`);
-    }
-  }
+    const startScreen = $("startScreen");
+    const mapScreen = $("mapScreen");
 
-  async function supabaseFetchRecent(){
-    const since = new Date(nowMs() - TTL_HOURS*60*60*1000).toISOString();
-    const url =
-      `${SUPABASE_URL}/rest/v1/${TABLE}` +
-      `?select=lat,lon,raining,created_at` +
-      `&created_at=gte.${encodeURIComponent(since)}` +
-      `&order=created_at.desc` +
-      `&limit=${MAX_POINTS_FETCH}`;
+    const btnRain = $("btnRain");
+    const btnCloud = $("btnCloud");
+    const btnSun = $("btnSun");
+    const btnStorm = $("btnStorm");
+    const btnFrost = $("btnFrost");
+    const btnHail = $("btnHail");
+    const btnWind = $("btnWind");
 
-    const res = await fetch(url, { headers: supabaseHeaders() });
-    if(!res.ok){
-      const txt = await res.text().catch(()=> "");
-      throw new Error(`Falha ao buscar (${res.status}). ${txt}`);
-    }
-    return await res.json();
-  }
+    const btnWhats = $("btnWhats");
+    const btnReset = $("btnReset");
 
-  /***************
-   * MAP
-   ***************/
-  function initMap(){
-    map = L.map("map", {
-      zoomControl: false,
-      attributionControl: true,
-      maxBounds: RS_BOUNDS,
-      maxBoundsViscosity: 0.9
-    });
+    const statusEl = $("status");
+    const mapStatusEl = $("mapStatus");
+    const selectedWeatherText = $("selectedWeatherText");
+    const selectedWeatherIcon = $("selectedWeatherIcon");
+    const cityMini = $("cityMini");
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      minZoom: 6
-    }).addTo(map);
+    let map = null;
+    let marker = null;
+    let selectedWeather = null;
+    let currentCoords = null;
 
-    L.control.zoom({ position:"bottomright" }).addTo(map);
-    markersLayer.addTo(map);
-
-    map.fitBounds(RS_BOUNDS.pad(-0.10));
-  }
-
-  function setUserOnMap(lat, lon){
-    userLatLng = L.latLng(lat, lon);
-
-    if(userMarker) map.removeLayer(userMarker);
-    userMarker = L.circleMarker(userLatLng, {
-      radius: 7,
-      weight: 2,
-      color: "#ffffff",
-      fillColor: "#3b82f6",
-      fillOpacity: 0.9
-    }).addTo(map);
-
-    if(radiusCircle5) map.removeLayer(radiusCircle5);
-    radiusCircle5 = L.circle(userLatLng, {
-      radius: START_RADIUS_KM * 1000,
-      weight: 1,
-      color: "rgba(255,255,255,.35)",
-      fillColor: "rgba(255,255,255,.06)",
-      fillOpacity: 0.15
-    }).addTo(map);
-
-    if(radiusCircle100) map.removeLayer(radiusCircle100);
-    radiusCircle100 = L.circle(userLatLng, {
-      radius: RADIUS_KM * 1000,
-      weight: 1,
-      color: "rgba(255,255,255,.22)",
-      fillColor: "rgba(255,255,255,.04)",
-      fillOpacity: 0.10
-    }).addTo(map);
-
-    // ✅ abre perto (ruas)
-    map.setView(userLatLng, 15);
-    map.setMinZoom(6);
-  }
-
-  function center(){
-    if(!userLatLng) return;
-    map.setView(userLatLng, 15);
-  }
-
-  /***************
-   * RENDER POINTS
-   ***************/
-  function clearPoints(){
-    markersLayer.clearLayers();
-    $("ptCount").textContent = "0";
-  }
-
-  function renderPoints(points){
-    clearPoints();
-    if(!userLatLng) return;
-
-    let count = 0;
-
-    for(const p of points){
-      const lat = Number(p.lat);
-      const lon = Number(p.lon);
-      if(!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
-
-      const ll = L.latLng(lat, lon);
-      if(!RS_BOUNDS.contains(ll)) continue;
-
-      const d = haversineKm(userLatLng, ll);
-      if(d > RADIUS_KM) continue;
-
-      const op = opacityByHour(p.created_at);
-      if(op <= 0) continue;
-
-      const emoji = p.raining ? "💧" : "☀️";
-      const icon = makeEmojiIcon(emoji, op);
-
-      L.marker(ll, { icon }).addTo(markersLayer);
-      count++;
+    function setStatus(message = "", type = "") {
+      statusEl.textContent = message;
+      statusEl.className = "status" + (type ? " " + type : "");
     }
 
-    $("ptCount").textContent = String(count);
-  }
-
-  async function refreshPoints(){
-    if(!SUPABASE_URL.includes("http") || SUPABASE_ANON_KEY.includes("COLE_AQUI")){
-      showMsg("Configure SUPABASE_URL e SUPABASE_ANON_KEY no código.");
-      return;
-    }
-    if(!userLatLng) return;
-
-    try{
-      const points = await supabaseFetchRecent();
-      renderPoints(points);
-      showMsg("");
-    }catch(err){
-      showMsg(String(err.message || err));
-    }
-  }
-
-  function startAutoRefresh(){
-    if(lastFetchTimer) clearInterval(lastFetchTimer);
-    lastFetchTimer = setInterval(refreshPoints, 45 * 1000);
-  }
-
-  /***************
-   * GEOLOCATION
-   ***************/
-  function getLocation(){
-    setChipLoc("Localizando…");
-    showMsg("");
-
-    if(!navigator.geolocation){
-      setChipLoc("Sem geolocalização");
-      showMsg("Seu navegador não suporta geolocalização.");
-      return;
+    function setMapStatus(message = "", type = "") {
+      mapStatusEl.textContent = message;
+      mapStatusEl.className = "status" + (type ? " " + type : "");
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (pos)=>{
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
+    function setButtonsDisabled(disabled) {
+      btnRain.disabled = disabled;
+      btnCloud.disabled = disabled;
+      btnSun.disabled = disabled;
+      btnStorm.disabled = disabled;
+      btnFrost.disabled = disabled;
+      btnHail.disabled = disabled;
+      btnWind.disabled = disabled;
+    }
 
-        const ll = L.latLng(lat, lon);
-        if(!RS_BOUNDS.contains(ll)){
-          setChipLoc("Fora do RS");
-          showMsg("Este app está limitado ao Rio Grande do Sul.");
-          map.fitBounds(RS_BOUNDS.pad(-0.10));
+    function getWeatherData(value) {
+      if (value === "rain") {
+        return { icon: "🌧️", label: "Aqui tá chovendo" };
+      }
+      if (value === "cloud") {
+        return { icon: "☁️", label: "Aqui tá nublado" };
+      }
+      if (value === "sun") {
+        return { icon: "☀️", label: "Aqui tem sol" };
+      }
+      if (value === "storm") {
+        return { icon: "🌩️", label: "Temporal" };
+      }
+      if (value === "frost") {
+        return { icon: "❄️", label: "Geada" };
+      }
+      if (value === "hail") {
+        return { icon: "🧊", label: "Granizo" };
+      }
+      if (value === "wind") {
+        return { icon: "💨", label: "Ventania" };
+      }
+
+      return { icon: "📍", label: "Sua resposta" };
+    }
+
+    function getCurrentPositionAsync() {
+      if (TEST_MODE) {
+        return Promise.resolve({
+          coords: {
+            latitude: TEST_COORDS.lat,
+            longitude: TEST_COORDS.lng
+          }
+        });
+      }
+
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("Seu navegador não suporta geolocalização."));
           return;
         }
 
-        setChipLoc("Localização OK");
-        setUserOnMap(lat, lon);
-        refreshPoints();
-        startAutoRefresh();
-      },
-      ()=>{
-        setChipLoc("Permissão negada");
-        showMsg("Ative a localização para usar o app.");
-      },
-      { enableHighAccuracy:true, timeout:12000, maximumAge:60000 }
-    );
-  }
-
-  /***************
-   * VOTE
-   ***************/
-  async function vote(raining){
-    if(!userLatLng){
-      showMsg("Ative a localização primeiro.");
-      return;
-    }
-    if(!SUPABASE_URL.includes("http") || SUPABASE_ANON_KEY.includes("COLE_AQUI")){
-      showMsg("Configure SUPABASE_URL e SUPABASE_ANON_KEY no código.");
-      return;
+        navigator.geolocation.getCurrentPosition(
+          (position) => resolve(position),
+          (error) => reject(error),
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+          }
+        );
+      });
     }
 
-    try{
-      showMsg("");
-      await supabaseUpsertReport(userLatLng.lat, userLatLng.lng, raining);
-      await refreshPoints();
-    }catch(err){
-      showMsg(String(err.message || err));
+    function initMap(lat, lng, choice) {
+      const mapContainer = document.getElementById("map");
+
+      if (!map) {
+        map = L.map(mapContainer).setView([lat, lng], 13);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: "&copy; OpenStreetMap"
+        }).addTo(map);
+      } else {
+        map.setView([lat, lng], 13);
+      }
+
+      if (marker) {
+        map.removeLayer(marker);
+      }
+
+      const weather = getWeatherData(choice);
+
+      const weatherIcon = L.divIcon({
+        className: "",
+        html: `<div style="font-size:34px; line-height:1;">${weather.icon}</div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+      });
+
+      marker = L.marker([lat, lng], {
+        icon: weatherIcon
+      }).addTo(map);
+
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 250);
     }
-  }
 
-  /***************
-   * EVENTS
-   ***************/
-  $("btnSim").addEventListener("click", ()=> vote(true));
-  $("btnNao").addEventListener("click", ()=> vote(false));
-  $("btnCenter").addEventListener("click", center);
+    function showMapScreen(choice, lat, lng) {
+      const weather = getWeatherData(choice);
 
-  /***************
-   * INIT
-   ***************/
-  initMap();
-  getLocation();
-</script>
+      selectedWeather = choice;
+      selectedWeatherText.textContent = weather.label;
+      selectedWeatherIcon.textContent = weather.icon;
+
+      startScreen.classList.add("hidden");
+      mapScreen.classList.remove("hidden");
+
+      initMap(lat, lng, choice);
+    }
+
+    async function handleVote(choice) {
+      try {
+        setButtonsDisabled(true);
+        setStatus(TEST_MODE ? "Abrindo mapa de teste..." : "Obtendo sua localização...");
+
+        const position = await getCurrentPositionAsync();
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        currentCoords = { lat, lng };
+
+        setStatus("");
+        showMapScreen(choice, lat, lng);
+        setMapStatus(TEST_MODE ? "Modo teste local ativo." : "Localização obtida com sucesso.", "ok");
+      } catch (err) {
+        console.error(err);
+
+        let msg = "Não foi possível continuar.";
+
+        if (err && typeof err.code !== "undefined") {
+          if (err.code === 1) msg = "Permissão de localização negada.";
+          else if (err.code === 2) msg = "Não foi possível obter sua localização.";
+          else if (err.code === 3) msg = "Tempo esgotado ao buscar localização.";
+        } else if (err.message) {
+          msg = err.message;
+        }
+
+        setStatus(msg, "err");
+      } finally {
+        setButtonsDisabled(false);
+      }
+    }
+
+    function shareWhatsApp() {
+      const url = window.location.href;
+      const weather = getWeatherData(selectedWeather);
+      const msg =
+        "Como está o tempo aí na sua cidade agora?\n\n" +
+        "Eu marquei: " + weather.label + "\n\n" +
+        "Veja e marque também:\n" +
+        url;
+
+      const shareUrl = "https://wa.me/?text=" + encodeURIComponent(msg);
+      window.open(shareUrl, "_blank");
+    }
+
+    function resetView() {
+      mapScreen.classList.add("hidden");
+      startScreen.classList.remove("hidden");
+      setStatus("");
+      setMapStatus("");
+      cityMini.textContent = "";
+    }
+
+    btnRain.addEventListener("click", () => handleVote("rain"));
+    btnCloud.addEventListener("click", () => handleVote("cloud"));
+    btnSun.addEventListener("click", () => handleVote("sun"));
+    btnStorm.addEventListener("click", () => handleVote("storm"));
+    btnFrost.addEventListener("click", () => handleVote("frost"));
+    btnHail.addEventListener("click", () => handleVote("hail"));
+    btnWind.addEventListener("click", () => handleVote("wind"));
+
+    btnWhats.addEventListener("click", shareWhatsApp);
+    btnReset.addEventListener("click", resetView);
+  </script>
 </body>
 </html>
