@@ -553,12 +553,17 @@
 
       const weather = getWeatherData(choice);
 
-      const weatherIcon = L.divIcon({
-        className: "",
-        html: `<div style="font-size:34px; line-height:1;">${weather.icon}</div>`,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17]
-      });
+     
+   const weatherIcon = L.divIcon({
+  className: "",
+  html: `
+    <div style="font-size:36px; line-height:1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.38)) drop-shadow(0 0 4px rgba(0,0,0,.22));">
+      ${weather.icon}
+    </div>
+  `,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18]
+});
 
       marker = L.marker([lat, lng], {
         icon: weatherIcon
