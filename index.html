@@ -692,24 +692,24 @@
       return row;
     }
 
-    async function saveVote(choice, lat, lng) {
-      const nowIso = new Date().toISOString();
+   async function saveVote(choice, lat, lng) {
+  const nowIso = new Date().toISOString();
 
-      const payload = {
-        device_id: deviceId,
-        weather_type: choice,
-        lat,
-        lng,
-        created_at: nowIso,
-        updated_at: nowIso
-      };
+  const payload = {
+    device_id: deviceId,
+    weather_type: choice,
+    lat,
+    lng,
+    updated_at: nowIso
+  };
 
-      const { error } = await supabaseClient
-        .from(TABLE_NAME)
-        .insert(payload);
+  const { error } = await supabaseClient
+    .from(TABLE_NAME)
+    .upsert(payload, { onConflict: "device_id" });
 
-      if (error) throw error;
-    }
+  if (error) throw error;
+}
+  
 
     function ensureMap(lat, lng) {
       const mapContainer = document.getElementById("map");
@@ -999,4 +999,5 @@
   </script>
 </body>
 </html>
+
 
