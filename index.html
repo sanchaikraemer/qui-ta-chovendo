@@ -489,21 +489,14 @@
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <script>
-    // =========================================
-    // COLE AQUI OS DADOS DO SEU SUPABASE
-    // =========================================
     const SUPABASE_URL = "https://vehsnhwcriblssrtemgm.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_XotcnC49lxGMtiKVzfTFjg_CdE7cgmg";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHNuaHdjcmlibHNzcnRlbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDE0NjgsImV4cCI6MjA4ODY3NzQ2OH0.62z781RnSa8etnnWxRgjw0O8YC57mHQ5eK1IcYJeY1k";
 
-    // =========================================
-    // CONFIG
-    // =========================================
-    const EVENT_DURATION_MS = 3 * 60 * 60 * 1000; // 3 horas
+    const TABLE_NAME = "registros";
+    const EVENT_DURATION_MS = 3 * 60 * 60 * 1000;
     const MAP_ZOOM = 11;
-    const AUTO_REFRESH_MS = 60 * 1000; // 60s
+    const AUTO_REFRESH_MS = 60 * 1000;
     const MIN_DISTANCE_METERS = 200;
-    const ACTIVE_TABLE = "registros";
-const HISTORY_TABLE = "registros";
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -535,7 +528,6 @@ const HISTORY_TABLE = "registros";
     let currentCoords = null;
     let refreshTimer = null;
     let markerClusterGroup = null;
-    let ownActivePoint = null;
 
     const deviceId = getDeviceId();
 
@@ -660,59 +652,63 @@ const HISTORY_TABLE = "registros";
       const cutoffIso = getCutoffIso();
 
       const { data, error } = await supabaseClient
-        .from(ACTIVE_TABLE)
+        .from(TABLE_NAME)
         .select("device_id, weather_type, lat, lng, updated_at")
-        .gte("updated_at", cutoffIso);
+        .gte("updated_at", cutoffIso)
+        .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      return (data || []).filter(p => isValidWeatherType(p.weather_type) && isValidLatLng(Number(p.lat), Number(p.lng)));
+
+      const seen = new Set();
+      const filtered = [];
+
+      for (const p of (data || [])) {
+        if (!isValidWeatherType(p.weather_type)) continue;
+        if (!isValidLatLng(Number(p.lat), Number(p.lng))) continue;
+        if (seen.has(p.device_id)) continue;
+        seen.add(p.device_id);
+        filtered.push(p);
+      }
+
+      return filtered;
     }
 
     async function fetchOwnActivePoint() {
       const cutoffIso = getCutoffIso();
 
       const { data, error } = await supabaseClient
-        .from(ACTIVE_TABLE)
+        .from(TABLE_NAME)
         .select("device_id, weather_type, lat, lng, updated_at")
         .eq("device_id", deviceId)
         .gte("updated_at", cutoffIso)
-        .maybeSingle();
+        .order("updated_at", { ascending: false })
+        .limit(1);
 
       if (error) throw error;
-      if (!data) return null;
-      if (!isValidWeatherType(data.weather_type)) return null;
-      if (!isValidLatLng(Number(data.lat), Number(data.lng))) return null;
-      return data;
+
+      const row = data && data.length ? data[0] : null;
+      if (!row) return null;
+      if (!isValidWeatherType(row.weather_type)) return null;
+      if (!isValidLatLng(Number(row.lat), Number(row.lng))) return null;
+
+      return row;
     }
 
-    async function appendHistoryRow(choice, lat, lng) {
+    async function saveVote(choice, lat, lng) {
+      const nowIso = new Date().toISOString();
+
       const payload = {
         device_id: deviceId,
         weather_type: choice,
         lat,
         lng,
-        created_at: new Date().toISOString()
+        created_at: nowIso,
+        updated_at: nowIso
       };
 
       const { error } = await supabaseClient
-        .from(HISTORY_TABLE)
+        .from(TABLE_NAME)
         .insert(payload);
-
-      if (error) throw error;
-    }
-
-    async function upsertCurrentPoint(choice, lat, lng) {
-      const payload = {
-        device_id: deviceId,
-        weather_type: choice,
-        lat,
-        lng,
-        updated_at: new Date().toISOString()
-      };
-
-      const { error } = await supabaseClient
-        .from(ACTIVE_TABLE)
-        .upsert(payload, { onConflict: "device_id" });
 
       if (error) throw error;
     }
@@ -888,16 +884,7 @@ const HISTORY_TABLE = "registros";
         }
       }
 
-      await upsertCurrentPoint(choice, finalLat, finalLng);
-      await appendHistoryRow(choice, finalLat, finalLng);
-
-      ownActivePoint = {
-        device_id: deviceId,
-        weather_type: choice,
-        lat: finalLat,
-        lng: finalLng,
-        updated_at: new Date().toISOString()
-      };
+      await saveVote(choice, finalLat, finalLng);
 
       return { lat: finalLat, lng: finalLng };
     }
@@ -964,10 +951,8 @@ const HISTORY_TABLE = "registros";
         const ownPoint = await fetchOwnActivePoint();
 
         if (ownPoint) {
-          ownActivePoint = ownPoint;
           setStatus("Você já marcou nas últimas 3 horas. Escolha outro clima para atualizar.", "ok");
         } else {
-          ownActivePoint = null;
           setStatus("");
         }
       } catch (err) {
@@ -983,7 +968,6 @@ const HISTORY_TABLE = "registros";
         const ownPoint = await fetchOwnActivePoint();
 
         if (ownPoint) {
-          ownActivePoint = ownPoint;
           setStatus("");
           await showMapScreen(
             ownPoint.weather_type,
@@ -1022,4 +1006,3 @@ const HISTORY_TABLE = "registros";
   </script>
 </body>
 </html>
-
