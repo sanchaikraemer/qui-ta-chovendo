@@ -7,8 +7,6 @@
   <meta name="theme-color" content="#f3f4f6" />
   <meta name="description" content="Mapa colaborativo do tempo em tempo real." />
 
-  <link rel="manifest" href="manifest.webmanifest" />
-
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -996,13 +994,9 @@
     btnWhats.addEventListener("click", shareWhatsApp);
     btnReset.addEventListener("click", resetView);
 
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch(err => console.error("SW:", err));
-      });
-    }
-
+  
     initApp();
   </script>
 </body>
 </html>
+
