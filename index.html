@@ -12,14 +12,6 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     crossorigin=""
   />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-  />
 
   <style>
     :root{
@@ -293,38 +285,6 @@
       transform:scale(1.08);
     }
 
-    .custom-cluster{
-      background:transparent;
-      border:none;
-    }
-
-    .cluster-bubble{
-      min-width:48px;
-      height:48px;
-      padding:0 10px;
-      border-radius:999px;
-      background:#ffffff;
-      border:1px solid #dbe3ea;
-      box-shadow:0 8px 18px rgba(15,23,42,.16);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:6px;
-      font-weight:800;
-      color:#1f2937;
-    }
-
-    .cluster-emoji{
-      font-size:22px;
-      line-height:1;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,.22));
-    }
-
-    .cluster-count{
-      font-size:14px;
-      line-height:1;
-    }
-
     @media (max-width:640px){
       body{ padding:12px; }
 
@@ -382,12 +342,6 @@
         flex:1 1 0;
         text-align:center;
       }
-
-      .cluster-bubble{
-        min-width:44px;
-        height:44px;
-        padding:0 8px;
-      }
     }
 
     @media (max-width:420px){
@@ -418,8 +372,8 @@
             </button>
 
             <button id="btnSun" class="weather-btn main" type="button">
-              <span class="emoji">☀️</span>
-              <span>Aqui tem sol</span>
+              <span id="sunNightEmoji" class="emoji">☀️</span>
+              <span id="sunNightText">Aqui tem sol</span>
             </button>
           </div>
 
@@ -472,7 +426,7 @@
         <div id="map"></div>
 
         <div class="map-note">
-          O mapa mostra os pontos ativos das últimas 3 horas.
+          O mapa mostra os pontos ativos das últimas 12 horas.
         </div>
 
         <div id="mapStatus" class="status"></div>
@@ -484,14 +438,13 @@
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <script>
     const SUPABASE_URL = "https://vehsnhwcriblssrtemgm.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHNuaHdjcmlibHNzcnRlbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDE0NjgsImV4cCI6MjA4ODY3NzQ2OH0.62z781RnSa8etnnWxRgjw0O8YC57mHQ5eK1IcYJeY1k";
 
     const TABLE_NAME = "registros";
-    const EVENT_DURATION_MS = 3 * 60 * 60 * 1000;
+    const EVENT_DURATION_MS = 12 * 60 * 60 * 1000;
     const MAP_ZOOM = 11;
     const AUTO_REFRESH_MS = 60 * 1000;
     const MIN_DISTANCE_METERS = 200;
@@ -520,12 +473,14 @@
     const selectedWeatherIcon = $("selectedWeatherIcon");
     const cityMini = $("cityMini");
     const smartHint = $("smartHint");
+    const sunNightEmoji = $("sunNightEmoji");
+    const sunNightText = $("sunNightText");
 
     let map = null;
     let selectedWeather = null;
     let currentCoords = null;
     let refreshTimer = null;
-    let markerClusterGroup = null;
+    let markerLayerGroup = null;
 
     const deviceId = getDeviceId();
 
@@ -539,6 +494,22 @@
       }
 
       return id;
+    }
+
+    function isNightTime() {
+      const now = new Date();
+      const minutes = now.getHours() * 60 + now.getMinutes();
+      return minutes < 360 || minutes > 1170;
+    }
+
+    function updateSunNightButton() {
+      if (isNightTime()) {
+        sunNightEmoji.textContent = "🌙";
+        sunNightText.textContent = "Aqui tem noite limpa";
+      } else {
+        sunNightEmoji.textContent = "☀️";
+        sunNightText.textContent = "Aqui tem sol";
+      }
     }
 
     function setStatus(message = "", type = "") {
@@ -564,7 +535,11 @@
     function getWeatherData(value) {
       if (value === "rain") return { icon: "🌧️", label: "Aqui tá chovendo" };
       if (value === "cloud") return { icon: "☁️", label: "Aqui tá nublado" };
-      if (value === "sun") return { icon: "☀️", label: "Aqui tem sol" };
+      if (value === "sun") {
+        return isNightTime()
+          ? { icon: "🌙", label: "Aqui tem noite limpa" }
+          : { icon: "☀️", label: "Aqui tem sol" };
+      }
       if (value === "storm") return { icon: "🌩️", label: "Temporal" };
       if (value === "frost") return { icon: "❄️", label: "Geada" };
       if (value === "hail") return { icon: "🧊", label: "Granizo" };
@@ -692,24 +667,23 @@
       return row;
     }
 
-   async function saveVote(choice, lat, lng) {
-  const nowIso = new Date().toISOString();
+    async function saveVote(choice, lat, lng) {
+      const nowIso = new Date().toISOString();
 
-  const payload = {
-    device_id: deviceId,
-    weather_type: choice,
-    lat,
-    lng,
-    updated_at: nowIso
-  };
+      const payload = {
+        device_id: deviceId,
+        weather_type: choice,
+        lat,
+        lng,
+        updated_at: nowIso
+      };
 
-  const { error } = await supabaseClient
-    .from(TABLE_NAME)
-    .upsert(payload, { onConflict: "device_id" });
+      const { error } = await supabaseClient
+        .from(TABLE_NAME)
+        .upsert(payload, { onConflict: "device_id" });
 
-  if (error) throw error;
-}
-  
+      if (error) throw error;
+    }
 
     function ensureMap(lat, lng) {
       const mapContainer = document.getElementById("map");
@@ -722,47 +696,7 @@
           attribution: "&copy; OpenStreetMap"
         }).addTo(map);
 
-        markerClusterGroup = L.markerClusterGroup({
-          maxClusterRadius: 60,
-          spiderfyOnMaxZoom: true,
-          showCoverageOnHover: false,
-          zoomToBoundsOnClick: true,
-          iconCreateFunction: function(cluster) {
-            const markers = cluster.getAllChildMarkers();
-            const counts = {};
-
-            for (const marker of markers) {
-              const w = marker.options.weatherType || "rain";
-              counts[w] = (counts[w] || 0) + 1;
-            }
-
-            let dominantType = "rain";
-            let dominantCount = 0;
-
-            for (const [type, count] of Object.entries(counts)) {
-              if (count > dominantCount) {
-                dominantType = type;
-                dominantCount = count;
-              }
-            }
-
-            const dominant = getWeatherData(dominantType);
-
-            return L.divIcon({
-              html: `
-                <div class="cluster-bubble">
-                  <span class="cluster-emoji">${dominant.icon}</span>
-                  <span class="cluster-count">${markers.length}</span>
-                </div>
-              `,
-              className: "custom-cluster",
-              iconSize: [52, 48],
-              iconAnchor: [26, 24]
-            });
-          }
-        });
-
-        map.addLayer(markerClusterGroup);
+        markerLayerGroup = L.layerGroup().addTo(map);
       } else {
         map.setView([lat, lng], MAP_ZOOM);
       }
@@ -777,8 +711,8 @@
         ensureMap(centerLat ?? Number(points[0].lat), centerLng ?? Number(points[0].lng));
       }
 
-      if (markerClusterGroup) {
-        markerClusterGroup.clearLayers();
+      if (markerLayerGroup) {
+        markerLayerGroup.clearLayers();
       }
 
       if (!points.length) {
@@ -800,12 +734,12 @@
 
         if (isOwn) ownFound = true;
 
-        markerClusterGroup.addLayer(marker);
+        markerLayerGroup.addLayer(marker);
       }
 
       cityMini.textContent = points.length === 1
-        ? "1 ponto ativo nas últimas 3 horas."
-        : `${points.length} pontos ativos nas últimas 3 horas.`;
+        ? "1 ponto ativo nas últimas 12 horas."
+        : `${points.length} pontos ativos nas últimas 12 horas.`;
 
       smartHint.textContent = ownFound
         ? "Seu ponto está destacado com um anel discreto."
@@ -900,7 +834,7 @@
 
         setStatus("");
         await showMapScreen(choice, result.lat, result.lng);
-        setMapStatus("Ponto salvo com sucesso. Ele ficará ativo por 3 horas.", "ok");
+        setMapStatus("Ponto salvo com sucesso. Ele ficará ativo por 12 horas.", "ok");
         startAutoRefresh();
       } catch (err) {
         console.error(err);
@@ -946,10 +880,12 @@
       smartHint.textContent = "";
 
       try {
+        updateSunNightButton();
+
         const ownPoint = await fetchOwnActivePoint();
 
         if (ownPoint) {
-          setStatus("Você já marcou nas últimas 3 horas. Escolha outro clima para atualizar.", "ok");
+          setStatus("Você já marcou nas últimas 12 horas. Escolha outro clima para atualizar.", "ok");
         } else {
           setStatus("");
         }
@@ -961,6 +897,7 @@
 
     async function initApp() {
       try {
+        updateSunNightButton();
         setStatus("Carregando...");
 
         const ownPoint = await fetchOwnActivePoint();
@@ -994,10 +931,7 @@
     btnWhats.addEventListener("click", shareWhatsApp);
     btnReset.addEventListener("click", resetView);
 
-  
     initApp();
   </script>
 </body>
 </html>
-
-
