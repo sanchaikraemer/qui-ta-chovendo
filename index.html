@@ -217,6 +217,84 @@
       border:1px solid var(--line);
     }
 
+    .summary-wrap{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .summary-card{
+      background:#f8fafc;
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:14px;
+      box-shadow:var(--shadow-soft);
+    }
+
+    .summary-head{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px 12px;
+      margin-bottom:10px;
+    }
+
+    .summary-title{
+      font-size:13px;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:#94a3b8;
+    }
+
+    .summary-main{
+      font-size:14px;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .summary-main strong{
+      color:var(--text);
+    }
+
+    .summary-grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:10px;
+    }
+
+    .summary-item{
+      border:1px solid #e2e8f0;
+      background:#ffffff;
+      border-radius:16px;
+      padding:12px 8px;
+      text-align:center;
+    }
+
+    .summary-emoji{
+      display:block;
+      font-size:24px;
+      line-height:1;
+      margin-bottom:6px;
+    }
+
+    .summary-count{
+      display:block;
+      font-size:20px;
+      line-height:1.1;
+      font-weight:800;
+      color:#0f172a;
+    }
+
+    .summary-label{
+      display:block;
+      margin-top:4px;
+      font-size:12px;
+      color:#64748b;
+      font-weight:700;
+    }
+
     #map{
       width:100%;
       height:460px;
@@ -329,6 +407,10 @@
 
       .events-grid{ gap:10px; }
 
+      .summary-grid{
+        grid-template-columns:repeat(2, minmax(0,1fr));
+      }
+
       #map{ height:400px; }
 
       .top-bar{
@@ -423,10 +505,47 @@
           </div>
         </div>
 
+        <div class="summary-wrap">
+          <div class="summary-card">
+            <div class="summary-head">
+              <div class="summary-title">Resumo da região</div>
+              <div id="summaryMain" class="summary-main">
+                <strong>Predominante:</strong> —
+              </div>
+            </div>
+
+            <div class="summary-grid">
+              <div class="summary-item">
+                <span class="summary-emoji">🌧️</span>
+                <span id="countRain" class="summary-count">0</span>
+                <span class="summary-label">Chuva</span>
+              </div>
+
+              <div class="summary-item">
+                <span class="summary-emoji">☁️</span>
+                <span id="countCloud" class="summary-count">0</span>
+                <span class="summary-label">Nublado</span>
+              </div>
+
+              <div class="summary-item">
+                <span id="summarySunEmoji" class="summary-emoji">☀️</span>
+                <span id="countSun" class="summary-count">0</span>
+                <span id="summarySunLabel" class="summary-label">Sol</span>
+              </div>
+
+              <div class="summary-item">
+                <span class="summary-emoji">🌩️</span>
+                <span id="countEvents" class="summary-count">0</span>
+                <span class="summary-label">Eventos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div id="map"></div>
 
         <div class="map-note">
-          O mapa mostra os pontos ativos das últimas 12 horas.
+          O mapa mostra os pontos ativos das últimas 3 horas.
         </div>
 
         <div id="mapStatus" class="status"></div>
@@ -444,8 +563,8 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHNuaHdjcmlibHNzcnRlbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDE0NjgsImV4cCI6MjA4ODY3NzQ2OH0.62z781RnSa8etnnWxRgjw0O8YC57mHQ5eK1IcYJeY1k";
 
     const TABLE_NAME = "registros";
-    const EVENT_DURATION_MS = 12 * 60 * 60 * 1000;
-    const MAP_ZOOM = 11;
+    const EVENT_DURATION_MS = 3 * 60 * 60 * 1000;
+    const MAP_ZOOM = 9;
     const AUTO_REFRESH_MS = 60 * 1000;
     const MIN_DISTANCE_METERS = 200;
 
@@ -475,6 +594,14 @@
     const smartHint = $("smartHint");
     const sunNightEmoji = $("sunNightEmoji");
     const sunNightText = $("sunNightText");
+
+    const summaryMain = $("summaryMain");
+    const countRain = $("countRain");
+    const countCloud = $("countCloud");
+    const countSun = $("countSun");
+    const countEvents = $("countEvents");
+    const summarySunEmoji = $("summarySunEmoji");
+    const summarySunLabel = $("summarySunLabel");
 
     let map = null;
     let selectedWeather = null;
@@ -506,9 +633,13 @@
       if (isNightTime()) {
         sunNightEmoji.textContent = "🌙";
         sunNightText.textContent = "Aqui tem noite limpa";
+        summarySunEmoji.textContent = "🌙";
+        summarySunLabel.textContent = "Noite limpa";
       } else {
         sunNightEmoji.textContent = "☀️";
         sunNightText.textContent = "Aqui tem sol";
+        summarySunEmoji.textContent = "☀️";
+        summarySunLabel.textContent = "Sol";
       }
     }
 
@@ -704,8 +835,72 @@
       setTimeout(() => map.invalidateSize(), 250);
     }
 
+    function getSummaryFromPoints(points) {
+      const counts = {
+        rain: 0,
+        cloud: 0,
+        sun: 0,
+        storm: 0,
+        frost: 0,
+        hail: 0,
+        wind: 0
+      };
+
+      for (const point of points) {
+        if (counts.hasOwnProperty(point.weather_type)) {
+          counts[point.weather_type] += 1;
+        }
+      }
+
+      const eventCount = counts.storm + counts.frost + counts.hail + counts.wind;
+
+      const ranking = [
+        { key: "rain", count: counts.rain },
+        { key: "cloud", count: counts.cloud },
+        { key: "sun", count: counts.sun },
+        { key: "storm", count: counts.storm },
+        { key: "frost", count: counts.frost },
+        { key: "hail", count: counts.hail },
+        { key: "wind", count: counts.wind }
+      ].sort((a, b) => b.count - a.count);
+
+      const top = ranking[0];
+      let predominant = "Sem predominância no momento";
+
+      if (top && top.count > 0) {
+        predominant = getWeatherData(top.key).label;
+      }
+
+      return {
+        counts,
+        eventCount,
+        predominant
+      };
+    }
+
+    function renderSummary(points) {
+      updateSunNightButton();
+
+      const summary = getSummaryFromPoints(points);
+
+      countRain.textContent = String(summary.counts.rain);
+      countCloud.textContent = String(summary.counts.cloud);
+      countSun.textContent = String(summary.counts.sun);
+      countEvents.textContent = String(summary.eventCount);
+
+      if (!points.length) {
+        summaryMain.innerHTML = "<strong>Predominante:</strong> nenhum relato ativo";
+        return;
+      }
+
+      summaryMain.innerHTML =
+        "<strong>Predominante:</strong> " + summary.predominant;
+    }
+
     async function renderActivePoints(centerLat = null, centerLng = null) {
       const points = await fetchActivePoints();
+
+      renderSummary(points);
 
       if (!map && points.length) {
         ensureMap(centerLat ?? Number(points[0].lat), centerLng ?? Number(points[0].lng));
@@ -738,8 +933,8 @@
       }
 
       cityMini.textContent = points.length === 1
-        ? "1 ponto ativo nas últimas 12 horas."
-        : `${points.length} pontos ativos nas últimas 12 horas.`;
+        ? "1 ponto ativo nas últimas 3 horas."
+        : `${points.length} pontos ativos nas últimas 3 horas.`;
 
       smartHint.textContent = ownFound
         ? "Seu ponto está destacado com um anel discreto."
@@ -834,7 +1029,7 @@
 
         setStatus("");
         await showMapScreen(choice, result.lat, result.lng);
-        setMapStatus("Ponto salvo com sucesso. Ele ficará ativo por 12 horas.", "ok");
+        setMapStatus("Ponto salvo com sucesso. Ele ficará ativo por 3 horas.", "ok");
         startAutoRefresh();
       } catch (err) {
         console.error(err);
@@ -878,6 +1073,7 @@
       setMapStatus("");
       cityMini.textContent = "";
       smartHint.textContent = "";
+      renderSummary([]);
 
       try {
         updateSunNightButton();
@@ -885,7 +1081,7 @@
         const ownPoint = await fetchOwnActivePoint();
 
         if (ownPoint) {
-          setStatus("Você já marcou nas últimas 12 horas. Escolha outro clima para atualizar.", "ok");
+          setStatus("Você já marcou nas últimas 3 horas. Escolha outro clima para atualizar.", "ok");
         } else {
           setStatus("");
         }
@@ -898,6 +1094,7 @@
     async function initApp() {
       try {
         updateSunNightButton();
+        renderSummary([]);
         setStatus("Carregando...");
 
         const ownPoint = await fetchOwnActivePoint();
